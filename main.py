@@ -2,9 +2,63 @@ import numpy as np
 import cv2
 import os
 import imutils
+import math
+from random import randrange
 
 NMS_THRESHOLD = 0.3
 MIN_CONFIDENCE = 0.2
+previous = []
+
+def distance(x1,y1,x2,y2):
+    return math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
+
+def result_analysis(input, previous):
+    final = []
+    if previous:
+        print(previous)
+        for pointIdx, pastPointData in enumerate(previous):
+            validPoint = False
+            validPoints = 0
+            known = None
+            for point in pastPointData:
+                if point is not None:
+                    validPoints += 1
+                    if not validPoint:
+                        validPoint = True
+                        known = point
+            if known is not None:
+                lowest = [None, 5000, known[2], known[3]]
+                index = -1
+                for idx, each in enumerate(input):
+                    value = distance(known[0][4], known[0][5], each[1][4], each[1][5])
+                    if value < known[3] and value < lowest[1]:
+                        lowest[0] = each[1]
+                        lowest[1] = value
+                if lowest[0] is not None:
+                    if validPoints > 0:
+                        previous[pointIdx].insert(0, lowest)
+                        if len(previous[pointIdx]) > 64:
+                            previous[pointIdx].pop(-1)
+                        if validPoints > 32:
+                            final.append(lowest)
+                    input.pop(idx)
+                else:
+                    previous[pointIdx].insert(0, None)
+                    if len(previous[pointIdx]) > 64:
+                        previous[pointIdx].pop(-1)
+                print(validPoints)
+            if validPoints == 0:
+                previous.pop(pointIdx)
+    while input:
+        print("new")
+        current = [[input.pop()[1], 0, (randrange(256), randrange(256), randrange(256)), 100]]
+        previous.append(current)
+    print(final)
+    return final, previous
+
+
+
+
 
 
 def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
@@ -46,7 +100,7 @@ def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
             (x, y) = (boxes[i][0], boxes[i][1])
             (w, h) = (boxes[i][2], boxes[i][3])
 
-            res = (confidences[i], (x, y, x + w, y + h), centroids[i])
+            res = (confidences[i], (x, y, x + w, y + h, (x + w)/2, (y + h)/2), centroids[i])
             results.append(res)
 
     return results
@@ -77,9 +131,12 @@ while True:
     image = imutils.resize(image, width=700)
     results = pedestrian_detection(image, model, layer_name,
                                    personidz=LABELS.index("person"))
+    list1, previous = result_analysis(results,previous)
 
-    for res in results:
-        cv2.rectangle(image, (res[1][0], res[1][1]), (res[1][2], res[1][3]), (0, 255, 0), 2)
+
+
+    for res in list1:
+        cv2.rectangle(image, (res[0][0], res[0][1]), (res[0][2], res[0][3]), res[2], 2)
 
     cv2.imshow("Detection", image)
 
