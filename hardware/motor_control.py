@@ -14,7 +14,7 @@ class MotorController():
 
     def _turn_left_time(self, tme, speed):
         tme = 0
-        while time <= 1:
+        while tme <= 1:
             GPIO.PWM(self.right_motor_pin, speed)
             tme += 0.001
             time.sleep(0.001)
@@ -22,20 +22,19 @@ class MotorController():
 
     def _turn_righ_time(self, tme, speed):
         tme = 0
-        while time <= 1:
+        while tme <= 1:
             GPIO.PWM(self.left_motor_pin, speed)
-            t += 0.001
-            tme.sleep(0.001)
+            tme += 0.001
+            time.sleep(0.001)
         GPIO.output(self.left_motor_pin, GPIO.LOW)
 
     def _go_straight(self, tme, speed)
         tme = 0
-        while time <= 1:
+        while tme <= 1:
             GPIO.PWM(self.left_motor_pin, speed)
             GPIO.PWM(self.right_motor_pin, speed)
-
-            t += 0.001
-            tme.sleep(0.001)
+            tme += 0.001
+            time.sleep(0.001)
         GPIO.output(self.left_motor_pin, GPIO.LOW)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
 
@@ -44,4 +43,4 @@ if __name__ == '__main__':
     channel2 = 2
     motorController = MotorController(channel1, channel2)
     motorController.GPIO_setup()
-    motorController._turn_left_time(1)
+    motorController._turn_left_time(1, 60)
