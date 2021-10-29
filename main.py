@@ -12,10 +12,23 @@ previous = []
 def distance(x1,y1,x2,y2):
     return math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
+def dominant_color(input, x, y, w, h):
+    cropped_image = input[x:x+w, y:y+h]
+    data = np.reshape(cropped_image, (-1, 3))
+    print(data.shape)
+    if (data.shape[0] > data.shape[1]):
+        data = np.float32(data)
+
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+        flags = cv2.KMEANS_RANDOM_CENTERS
+        compactness, labels, centers = cv2.kmeans(data, 1, None, criteria, 10, flags)
+
+        print('Dominant color is: bgr({})'.format(centers[0].astype(np.int32)))
+        print(str(x) + " " + str(y) + " " + str(x + w) + " " + str(y + h))
+
 def result_analysis(input, previous):
     final = []
     if previous:
-        print(previous)
         for pointIdx, pastPointData in enumerate(previous):
             validPoint = False
             validPoints = 0
@@ -46,20 +59,12 @@ def result_analysis(input, previous):
                     previous[pointIdx].insert(0, None)
                     if len(previous[pointIdx]) > 64:
                         previous[pointIdx].pop(-1)
-                print(validPoints)
             if validPoints == 0:
                 previous.pop(pointIdx)
     while input:
-        print("new")
         current = [[input.pop()[1], 0, (randrange(256), randrange(256), randrange(256)), 100]]
         previous.append(current)
-    print(final)
     return final, previous
-
-
-
-
-
 
 def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
     (H, W) = imagePar.shape[:2]
@@ -101,6 +106,7 @@ def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
             (w, h) = (boxes[i][2], boxes[i][3])
 
             res = (confidences[i], (x, y, x + w, y + h, (x + w)/2, (y + h)/2), centroids[i])
+            dominant_color(imagePar, x, y, w, h)
             results.append(res)
 
     return results
