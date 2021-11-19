@@ -7,6 +7,7 @@ class MotorController():
         self.right_motor_pin = right_motor_pin
 
     def GPIO_setup(self):
+        GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.right_motor_pin, GPIO.OUT)
         GPIO.setup(self.left_motor_pin, GPIO.OUT)
         GPIO.output(self.left_motor_pin, GPIO.LOW)
@@ -20,7 +21,7 @@ class MotorController():
             time.sleep(0.001)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
 
-    def _turn_righ_time(self, desired_time, speed):
+    def _turn_right_time(self, desired_time, speed):
         tme = 0
         while tme <= desired_time:
             GPIO.PWM(self.left_motor_pin, speed)
