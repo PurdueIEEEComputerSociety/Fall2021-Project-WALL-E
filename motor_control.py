@@ -17,16 +17,16 @@ class MotorController():
         tme = 0
         while tme <= desired_time:
             GPIO.PWM(self.right_motor_pin, speed)
-            tme += 0.001
-            time.sleep(0.001)
+            tme += 0.004
+            time.sleep(0.004)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
 
     def _turn_right_time(self, desired_time, speed):
         tme = 0
         while tme <= desired_time:
             GPIO.PWM(self.left_motor_pin, speed)
-            tme += 0.001
-            time.sleep(0.001)
+            tme += 0.004
+            time.sleep(0.004)
         GPIO.output(self.left_motor_pin, GPIO.LOW)
 
     def _go_straight(self, desired_time, speed):
@@ -35,18 +35,27 @@ class MotorController():
             GPIO.PWM(self.left_motor_pin, speed)
             GPIO.PWM(self.right_motor_pin, speed)
 
-            tme += 0.001
+            tme += 0.004
             print(f'going straight for: {tme}.')
-            time.sleep(0.001)
+            time.sleep(0.004)
         GPIO.output(self.left_motor_pin, GPIO.LOW)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
 
-    def motor_control(self, forward_speed = 0.5, angular_speed = 0, mov_dir, angular_dir):
+    def motor_control(self, forward_speed = 0.5, angular_speed = 0, mov_dir):
 
-        GPIO.PWM(self.left_motor_pin, forward_speed - angular_speed)
-        GPIO.PWM(self.left_motor_pin, forward_speed + angular_speed)
+        GPIO.PWM(self.left_motor_pin, mov_dir * forward_speed - angular_speed)
+        GPIO.PWM(self.right_motor_pin, mov_dir * forward_speed + angular_speed)
 
-        
+    def getDir(direction):
+        # Use ROS/ anything else to get direction from computer vision algorithm
+        if direction = 0:
+            angular_speed = 0
+        elif direction = 1:
+            angular_speed = 0.2 # turn left
+        else:
+            angular_speed = - 0.2 # turn right
+        return angular_speed
+
 if __name__ == '__main__':
     channel1 = 1
     channel2 = 2
@@ -54,3 +63,8 @@ if __name__ == '__main__':
     motorController.GPIO_setup()
 
     motorController._go_straight(2, 0.8)
+
+    while 1:
+        angular_speed = motorController.getDir(0)
+        motorController.motor_control(0.5, angular_speed, 1)
+        time.sleep(0.004)
