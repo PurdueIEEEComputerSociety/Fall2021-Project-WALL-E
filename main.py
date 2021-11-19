@@ -13,6 +13,7 @@ def distance(x1,y1,x2,y2):
     return math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
 def dominant_color(input, x, y, w, h):
+    # TODO: have cropped image be smaller / more concentrated on chest area
     cropped_image = input[x:x+w, y:y+h]
     data = np.reshape(cropped_image, (-1, 3))
     print(data.shape)
@@ -23,6 +24,7 @@ def dominant_color(input, x, y, w, h):
         flags = cv2.KMEANS_RANDOM_CENTERS
         compactness, labels, centers = cv2.kmeans(data, 1, None, criteria, 10, flags)
 
+        # TODO: use colors to differentiate people
         print('Dominant color is: bgr({})'.format(centers[0].astype(np.int32)))
         print(str(x) + " " + str(y) + " " + str(x + w) + " " + str(y + h))
 
