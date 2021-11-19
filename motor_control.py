@@ -41,9 +41,16 @@ class MotorController():
         GPIO.output(self.left_motor_pin, GPIO.LOW)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
 
+    def motor_control(self, forward_speed = 0.5, angular_speed = 0, mov_dir, angular_dir):
+
+        GPIO.PWM(self.left_motor_pin, forward_speed - angular_speed)
+        GPIO.PWM(self.left_motor_pin, forward_speed + angular_speed)
+
+        
 if __name__ == '__main__':
     channel1 = 1
     channel2 = 2
     motorController = MotorController(channel1, channel2)
     motorController.GPIO_setup()
+
     motorController._go_straight(2, 0.8)
