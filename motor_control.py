@@ -12,6 +12,9 @@ class MotorController():
         GPIO.setup(self.left_motor_pin, GPIO.OUT)
         GPIO.output(self.left_motor_pin, GPIO.LOW)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
+    def stop_robot():
+        GPIO.output(self.left_motor_pin, GPIO.LOW)
+        GPIO.output(self.right_motor_pin, GPIO.LOW)
 
     def _turn_left_time(self, desired_time, speed):
         tme = 0
@@ -60,11 +63,14 @@ if __name__ == '__main__':
     channel1 = 1
     channel2 = 2
     motorController = MotorController(channel1, channel2)
-    motorController.GPIO_setup()
 
+    motorController.GPIO_setup()
     motorController._go_straight(2, 0.8)
 
     while 1:
-        angular_speed = motorController.getDir(0)
-        motorController.motor_control(0.5, angular_speed, 1)
+        if run = 1:
+            angular_speed = motorController.getDir(0)
+            motorController.motor_control(0.5, angular_speed, 1)
+        else:
+            motorController.stop_robot()
         time.sleep(0.004)
