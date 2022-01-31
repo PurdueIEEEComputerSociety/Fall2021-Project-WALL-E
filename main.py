@@ -3,6 +3,7 @@ import cv2
 import os
 import imutils
 import math
+import warnings
 from random import randrange
 
 NMS_THRESHOLD = 0.3
@@ -14,9 +15,9 @@ def distance(x1,y1,x2,y2):
 
 def dominant_color(input, x, y, w, h):
     # TODO: have cropped image be smaller / more concentrated on chest area
-    cropped_image = input[x:x+w, y:y+h]
+    cropped_image = input[x:(x+w)//2, y:(y+h)//2]
     data = np.reshape(cropped_image, (-1, 3))
-    print(data.shape)
+    # print(data.shape)
     if (data.shape[0] > data.shape[1]):
         data = np.float32(data)
 
@@ -25,8 +26,26 @@ def dominant_color(input, x, y, w, h):
         compactness, labels, centers = cv2.kmeans(data, 1, None, criteria, 10, flags)
 
         # TODO: use colors to differentiate people
-        print('Dominant color is: bgr({})'.format(centers[0].astype(np.int32)))
+        print('Dominant color of outer frame is: bgr({})'.format(centers[0].astype(np.int32)))
         print(str(x) + " " + str(y) + " " + str(x + w) + " " + str(y + h))
+
+def average_color(input, x, y, w, h):
+    cropped_image = input[x:(x+w)//2, y:(y+h)//2]
+
+    # Average can possibly have a divide by zero error, but nanmean returns
+    # [nan nan nan] in place of [r-value, g-value, b-value] when this happens.
+    # This CAN result in runtime errors but it doesn't crash
+
+    avg_per_row = np.nanmean(cropped_image, axis=0)
+    avg_color = np.nanmean(avg_per_row, axis=0)
+
+    # If nanmean ends up being a problem we can try using masks
+    # like so in the future:
+    #
+    # avg_per_row_m = np.ma.array(avg_per_row, mask=(avg_per_row==0))
+    # avg_color_m = np.ma.array(avg_color, mask=(avg_color==0));
+
+    print(avg_color)
 
 def result_analysis(input, previous):
     final = []
@@ -109,6 +128,7 @@ def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
 
             res = (confidences[i], (x, y, x + w, y + h, (x + w)/2, (y + h)/2), centroids[i])
             dominant_color(imagePar, x, y, w, h)
+            average_color(imagePar, x, y, w, h)
             results.append(res)
 
     return results
