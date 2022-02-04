@@ -1,9 +1,7 @@
 import numpy as np
 import cv2
-import os
 import imutils
 import math
-import warnings
 from random import randrange
 
 NMS_THRESHOLD = 0.3
@@ -39,13 +37,27 @@ def average_color(input, x, y, w, h):
     avg_per_row = np.nanmean(cropped_image, axis=0)
     avg_color = np.nanmean(avg_per_row, axis=0)
 
-    # If nanmean ends up being a problem we can try using masks
-    # like so in the future:
-    #
-    # avg_per_row_m = np.ma.array(avg_per_row, mask=(avg_per_row==0))
-    # avg_color_m = np.ma.array(avg_color, mask=(avg_color==0));
-
     print(avg_color)
+
+# detects if person is right or left of screen
+# TODO: figure out what to tell hardware if left or right
+def left_or_right(input, x, y, w, h):
+    cropped_image = input[x:(x+w)//2, y:(y+h)//2]
+    (main_height, main_width) = input.shape[:2]
+    (cropped_height, cropped_width) = cropped_image.shape[:2]
+
+    rightX = (main_width // 1.7)
+    leftX = (main_width // 2.5)
+
+    if (cropped_width == 0):
+        print("Cropped image not initialized")
+    # Ensures cropped image isn't too large to skew data
+    elif (4 * cropped_width >= main_width):
+        print("TOO CLOSE")
+    elif ((x+w) < leftX):
+        print("LEFT")
+    elif ((x) > rightX):
+        print("RIGHT")
 
 def result_analysis(input, previous):
     final = []
@@ -129,6 +141,7 @@ def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
             res = (confidences[i], (x, y, x + w, y + h, (x + w)/2, (y + h)/2), centroids[i])
             dominant_color(imagePar, x, y, w, h)
             average_color(imagePar, x, y, w, h)
+            left_or_right(imagePar, x, y, w, h)
             results.append(res)
 
     return results
