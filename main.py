@@ -11,9 +11,8 @@ previous = []
 def distance(x1,y1,x2,y2):
     return math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
-def dominant_color(input, x, y, w, h):
+def dominant_color(cropped_image, x, y, w, h):
     # TODO: have cropped image be smaller / more concentrated on chest area
-    cropped_image = input[x:(x+w)//2, y:(y+h)//2]
     data = np.reshape(cropped_image, (-1, 3))
     # print(data.shape)
     if (data.shape[0] > data.shape[1]):
@@ -25,10 +24,11 @@ def dominant_color(input, x, y, w, h):
 
         # TODO: use colors to differentiate people
         print('Dominant color of outer frame is: bgr({})'.format(centers[0].astype(np.int32)))
-        print(str(x) + " " + str(y) + " " + str(x + w) + " " + str(y + h))
+        return centers[0].astype(np.int32)
 
-def average_color(input, x, y, w, h):
-    cropped_image = input[x:(x+w)//2, y:(y+h)//2]
+    return [0,0,0]
+
+def average_color(cropped_image, x, y, w, h):
 
     # Average can possibly have a divide by zero error, but nanmean returns
     # [nan nan nan] in place of [r-value, g-value, b-value] when this happens.
@@ -37,7 +37,7 @@ def average_color(input, x, y, w, h):
     avg_per_row = np.nanmean(cropped_image, axis=0)
     avg_color = np.nanmean(avg_per_row, axis=0)
 
-    print(avg_color)
+    return avg_color
 
 # detects if person is right or left of screen
 # TODO: figure out what to tell hardware if left or right
@@ -138,10 +138,14 @@ def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
             (x, y) = (boxes[i][0], boxes[i][1])
             (w, h) = (boxes[i][2], boxes[i][3])
 
-            res = (confidences[i], (x, y, x + w, y + h, (x + w)/2, (y + h)/2), centroids[i])
-            dominant_color(imagePar, x, y, w, h)
-            average_color(imagePar, x, y, w, h)
+            cropped_image = imagePar[x:(x + w), y:(y + h)]
+            if (x > 0 and y > 0 and x < W and y < H):
+                cv2.imshow("cropped", cropped_image)
+
+            dom_c = dominant_color(cropped_image, x, y, w, h)
+            avg_c = average_color(cropped_image, x, y, w, h)
             left_or_right(imagePar, x, y, w, h)
+            res = (confidences[i], (x, y, x + w, y + h, (x + w) / 2, (y + h) / 2), centroids[i], dom_c)
             results.append(res)
 
     return results
@@ -177,7 +181,7 @@ while True:
 
 
     for res in list1:
-        cv2.rectangle(image, (res[0][0], res[0][1]), (res[0][2], res[0][3]), res[2], 2)
+        cv2.rectangle(image, (res[0][0], res[0][1]), (res[0][2], res[0][3]), res[3], 2)
 
     cv2.imshow("Detection", image)
 
