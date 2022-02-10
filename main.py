@@ -138,7 +138,7 @@ def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
             (x, y) = (boxes[i][0], boxes[i][1])
             (w, h) = (boxes[i][2], boxes[i][3])
 
-            cropped_image = imagePar[x:(x + w), y:(y + h)]
+            cropped_image = imagePar[y:(y + h), x:(x + w)]
             if (x > 0 and y > 0 and x < W and y < H):
                 cv2.imshow("cropped", cropped_image)
 
