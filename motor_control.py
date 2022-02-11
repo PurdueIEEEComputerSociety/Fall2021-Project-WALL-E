@@ -13,7 +13,7 @@ class MotorController():
         GPIO.output(self.left_motor_pin, GPIO.LOW)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
 
-    def stop_robot():
+    def stop_robot(self):
         GPIO.output(self.left_motor_pin, GPIO.LOW)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
 
@@ -45,16 +45,16 @@ class MotorController():
         GPIO.output(self.left_motor_pin, GPIO.LOW)
         GPIO.output(self.right_motor_pin, GPIO.LOW)
 
-    def motor_control(self, forward_speed = 0.5, angular_speed = 0, mov_dir):
+    def motor_control(self, forward_speed = 0.5, angular_speed = 0, mov_dir = 0):
 
         GPIO.PWM(self.left_motor_pin, mov_dir * forward_speed - angular_speed)
         GPIO.PWM(self.right_motor_pin, mov_dir * forward_speed + angular_speed)
 
     def getDir(direction):
         # Use ROS/ anything else to get direction from computer vision algorithm
-        if direction = 0:
+        if direction == 0:
             angular_speed = 0
-        elif direction = 1:
+        elif direction == 1:
             angular_speed = 0.2 # turn left
         else:
             angular_speed = - 0.2 # turn right
@@ -64,14 +64,14 @@ if __name__ == '__main__':
     channel1 = 1
     channel2 = 2
     run = 0
-    
+
     motorController = MotorController(channel1, channel2)
 
     motorController.GPIO_setup()
     motorController._go_straight(2, 0.8)
 
     while 1:
-        if run = 1:
+        if run == 1:
             angular_speed = motorController.getDir(0)
             motorController.motor_control(0.5, angular_speed, 1)
         else:
