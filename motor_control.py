@@ -50,7 +50,7 @@ class MotorController():
         GPIO.PWM(self.left_motor_pin, mov_dir * forward_speed - angular_speed)
         GPIO.PWM(self.right_motor_pin, mov_dir * forward_speed + angular_speed)
 
-    def getDir(direction):
+    def get_dir(direction):
         # Use ROS/ anything else to get direction from computer vision algorithm
         if direction == 0:
             angular_speed = 0
@@ -59,6 +59,41 @@ class MotorController():
         else:
             angular_speed = - 0.2 # turn right
         return angular_speed
+
+    def def_PID_vals(self):
+        # There is only one plane that the robot can change its direction
+        self.kp = 0
+        self.kd = 0
+        self.ki = 0
+        self.dt = 0.004
+        self.t = 0
+
+    def PID_forward(self):
+        # Need to add - calculate the forward speed based on the speed of a person
+        # and the distance form a person
+        pass
+
+    def PID_angular(self, forward_speed):
+        # Desired pos - angle of orientation (vector ?)
+        # Actual pos - actual angle (vector ?) of orientation
+        # curr_err - difference between two angles (vectors ?)
+        # increasing angle difference between the desired and actual orientation increases error
+
+        curr_error = desired_pos - actual_pos
+
+        error_p = self.kp * (curr_err - prev_err)
+        error_d = self.kd * (curr_err - prev_err) / self.dt
+        error_i = self.ki * (curr_err - prev_err) * t
+
+        error_total = error_p + error_i + error_d
+
+        GPIO.PWM(self.left_motor_pin, forward_speed - error_total)
+        GPIO.PWM(self.right_motor_pin, forward_speed + error_total)
+
+        prev_err = curr_err
+        t += self.dt
+        t %= 1000000
+        time.sleep(0.004)
 
 if __name__ == '__main__':
     channel1 = 1
