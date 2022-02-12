@@ -3,6 +3,8 @@ import cv2
 import imutils
 import math
 from random import randrange
+from sklearn.cluster import KMeans
+from collections import Counter
 
 NMS_THRESHOLD = 0.3
 MIN_CONFIDENCE = 0.2
@@ -13,20 +15,13 @@ def distance(x1,y1,x2,y2):
 
 def dominant_color(cropped_image, x, y, w, h):
     # TODO: have cropped image be smaller / more concentrated on chest area
-    data = np.reshape(cropped_image, (-1, 3))
     # print(data.shape)
-    if (data.shape[0] > data.shape[1]):
-        data = np.float32(data)
-
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-        flags = cv2.KMEANS_RANDOM_CENTERS
-        compactness, labels, centers = cv2.kmeans(data, 1, None, criteria, 10, flags)
-
-        # TODO: use colors to differentiate people
-        print('Dominant color of outer frame is: bgr({})'.format(centers[0].astype(np.int32)))
-        return centers[0].astype(np.int32)
-
-    return [0,0,0]
+    tempImage = cropped_image.reshape((cropped_image.shape[0] * cropped_image.shape[1], 3))
+    clusters = KMeans(n_clusters = 1)
+    labels = clusters.fit_predict(tempImage)
+    counts = Counter(labels)
+    print(clusters.cluster_centers_[counts.most_common(1)[0][0]])
+    return clusters.cluster_centers_[counts.most_common(1)[0][0]]
 
 def average_color(cropped_image, x, y, w, h):
 
@@ -137,15 +132,7 @@ def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
         for i in idzs.flatten():
             (x, y) = (boxes[i][0], boxes[i][1])
             (w, h) = (boxes[i][2], boxes[i][3])
-
-            cropped_image = imagePar[y:(y + h), x:(x + w)]
-            if (x > 0 and y > 0 and x < W and y < H):
-                cv2.imshow("cropped", cropped_image)
-
-            dom_c = dominant_color(cropped_image, x, y, w, h)
-            avg_c = average_color(cropped_image, x, y, w, h)
-            left_or_right(imagePar, x, y, w, h)
-            res = (confidences[i], (x, y, x + w, y + h, (x + w) / 2, (y + h) / 2), centroids[i], dom_c)
+            res = (confidences[i], (x, y, x + w, y + h, (x + w) / 2, (y + h) / 2), centroids[i])
             results.append(res)
 
     return results
@@ -181,7 +168,23 @@ while True:
 
 
     for res in list1:
-        cv2.rectangle(image, (res[0][0], res[0][1]), (res[0][2], res[0][3]), res[3], 2)
+        (x, y) = (res[0][0], res[0][1])
+        (w, h) = (res[0][2] - res[0][0], res[0][3] - res[0][1])
+
+        xRatio = .2
+        yRatio = .2
+
+        (cropW, cropH) = (int((xRatio) * w), int((yRatio * h)))
+        (cropX, cropY) = (int(x + ((1 - xRatio) * (w) / 2)), int(y + ((1 - yRatio) * (h) / 2)))
+
+        cropped_image = image[cropY:cropY + cropH, cropX:cropX + cropW]
+
+        cv2.rectangle(image, (cropX, cropY), (cropX + cropW, cropY + cropH), (0, 255, 0), 2)
+
+        dom_c = dominant_color(cropped_image, x, y, w, h)
+        # avg_c = average_color(cropped_image, x, y, w, h)
+        # left_or_right(imagePar, x, y, w, h)
+        cv2.rectangle(image, (res[0][0], res[0][1]), (res[0][2], res[0][3]), (dom_c[2], dom_c[1], dom_c[0]), 2)
 
     cv2.imshow("Detection", image)
 
