@@ -9,13 +9,23 @@ NMS_THRESHOLD = 0.3
 MIN_CONFIDENCE = 0.2
 previous = []
 
+class person:
+    def __init__(self):
+        self.maxFrames = 64
+        self.currentFrames = 0
+        self.previousFrames = []
+
+
+
+
+
 def distance(x1,y1,x2,y2):
     return math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
 def result_analysis(input, previous):
     final = []
     if previous:
-        print(previous)
+        #print(previous)
         for pointIdx, pastPointData in enumerate(previous):
             validPoint = False
             validPoints = 0
@@ -46,14 +56,14 @@ def result_analysis(input, previous):
                     previous[pointIdx].insert(0, None)
                     if len(previous[pointIdx]) > 64:
                         previous[pointIdx].pop(-1)
-                print(validPoints)
+                #print(validPoints)
             if validPoints == 0:
                 previous.pop(pointIdx)
     while input:
-        print("new")
+        #print("new")
         current = [[input.pop()[1], 0, (randrange(256), randrange(256), randrange(256)), 100]]
         previous.append(current)
-    print(final)
+    #print(final)
     return final, previous
 
 
@@ -131,12 +141,16 @@ while True:
     image = imutils.resize(image, width=700)
     results = pedestrian_detection(image, model, layer_name,
                                    personidz=LABELS.index("person"))
+    print(previous)
+    print(results)
     list1, previous = result_analysis(results,previous)
 
 
 
-    for res in list1:
-        cv2.rectangle(image, (res[0][0], res[0][1]), (res[0][2], res[0][3]), res[2], 2)
+
+    for res in results:
+        print(res)
+        cv2.rectangle(image, (res[1][0], res[1][1]), (res[1][2], res[1][3]), (223, 8, 192), 2)
 
     cv2.imshow("Detection", image)
 
