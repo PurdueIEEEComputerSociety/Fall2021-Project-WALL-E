@@ -10,20 +10,114 @@ NMS_THRESHOLD = 0.3
 MIN_CONFIDENCE = 0.2
 previous = []
 
+imageHeight = 0
+imageWidth = 0
+
+class color:
+    def __init__(self, r, g, b):
+        self.r = r
+        self.g = g
+        self.b = b
+
+class personData:
+    def __init__(self, cords):
+        self.confidence = cords[0]
+        self.x1 = cords[1][0]
+        self.y1 = cords[1][1]
+        self.x2 = cords[1][2]
+        self.y2 = cords[1][3]
+        self.centerX = cords[1][4]
+        self.centerY = cords[1][5]
+        xRatio = .2
+        yRatio = .2
+        self.cropW = int((xRatio) * (self.x2 - self.x1))
+        self.cropH = int((yRatio * (self.y2 - self.y1)))
+        self.cropX = int(self.x1 + ((1 - xRatio) * (self.x2 - self.x1) / 2))
+        self.cropY = int(self.y1 + ((1 - yRatio) * (self.y2 - self.y1) / 2))
+        self.croppedImage = image[self.cropY:self.cropY + self.cropH, self.cropX:self.cropX + self.cropW]
+        self.domColor = dominant_color(self.croppedImage)
+        self.averageColor = average_color(self.croppedImage)
+        self.currentPerson = None
+
+class personObj:
+    def __init__(self, personData):
+        self.MAXFRAMES = 128
+        self.MAXSTORED = 16
+        self.MINREL = 32
+        self.MAXLIFE = 16
+        self.MINFRAMES = 8
+        self.frames = [personData]
+        self.frameCount = 16
+        self.validFrames = []
+        for i in range(16 - 1):
+            self.validFrames.append(True)
+        self.currentScore = -1
+        self.currentFrame = None
+        self.claimed = True
+        self.lifeTime = 16
+
+    def calculateScore(self, frame):
+        currentDistanceScore = distanceScore(self.frames[0].centerX, self.frames[0].centerY, frame.centerX, frame.centerY, imageWidth, imageHeight)
+        domColorSum = 0
+        aveColorSum = 0
+        for each in self.frames:
+            domColorSum = domColorSum + colorScore(each.domColor, frame.domColor)
+            aveColorSum = aveColorSum + colorScore(each.averageColor, frame.averageColor)
+        domColorScore = domColorSum / len(self.frames)
+        aveColorScore = aveColorSum / len(self.frames)
+        return 2 * currentDistanceScore + domColorScore + aveColorScore
+
+    def addFrame(self, frame):
+        if frame is not None:
+            self.currentFrame = frame
+            self.validFrames.insert(0,True)
+            self.lifeTime = self.MAXLIFE
+            self.claimed = True
+            self.frames.insert(0, frame)
+            self.frameCount = self.frameCount + 1
+            if len(self.frames) > self.MAXSTORED:
+                self.frames.pop(-1)
+        if frame is None:
+            self.validFrames.insert(0,False)
+            self.lifeTime = self.lifeTime - 1
+        if len(self.validFrames) > self.MAXFRAMES:
+            if(self.validFrames.pop(-1) is True):
+                self.frameCount = self.frameCount - 1
+
+    def reset(self):
+        self.currentFrame = None
+        self.claimed = False
+
+    def checkPerson(self):
+        if (self.lifeTime > 0 and self.frameCount > self.MINFRAMES):
+            return False
+        else:
+            return True
+
 def distance(x1,y1,x2,y2):
     return math.sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
-def dominant_color(cropped_image, x, y, w, h):
+def distanceScore(x1, y1, x2, y2, imageWidth, imageHeight):
+    distanceRatio = distance(x1, y1, x2, y2) / math.sqrt((imageWidth ** 2) + (imageHeight ** 2))
+    return 1 - distanceRatio
+
+def colorScore(color1, color2):
+    colorDist = math.sqrt(((color1.r - color2.r) ** 2) + ((color1.g - color2.g) ** 2) + ((color1.b - color2.b) ** 2))
+    colorRatio = colorDist / math.sqrt(((255) ** 2) + ((255) ** 2) + ((255) ** 2))
+    return 1 - colorRatio
+
+def dominant_color(cropped_image):
     # TODO: have cropped image be smaller / more concentrated on chest area
     # print(data.shape)
     tempImage = cropped_image.reshape((cropped_image.shape[0] * cropped_image.shape[1], 3))
     clusters = KMeans(n_clusters = 1)
     labels = clusters.fit_predict(tempImage)
     counts = Counter(labels)
-    print(clusters.cluster_centers_[counts.most_common(1)[0][0]])
-    return clusters.cluster_centers_[counts.most_common(1)[0][0]]
+    bgr = clusters.cluster_centers_[counts.most_common(1)[0][0]]
+    colorObj = color(bgr[0], bgr[1], bgr[2])
+    return colorObj
 
-def average_color(cropped_image, x, y, w, h):
+def average_color(cropped_image):
 
     # Average can possibly have a divide by zero error, but nanmean returns
     # [nan nan nan] in place of [r-value, g-value, b-value] when this happens.
@@ -31,8 +125,8 @@ def average_color(cropped_image, x, y, w, h):
 
     avg_per_row = np.nanmean(cropped_image, axis=0)
     avg_color = np.nanmean(avg_per_row, axis=0)
-
-    return avg_color
+    colorObj = color(avg_color[0], avg_color[1], avg_color[2])
+    return colorObj
 
 # detects if person is right or left of screen
 # TODO: figure out what to tell hardware if left or right
@@ -94,6 +188,43 @@ def result_analysis(input, previous):
         previous.append(current)
     return final, previous
 
+def dataFormatter(data):
+    outputList = []
+    for each in data:
+        outputList.append(personData(each))
+    return outputList
+
+def newAnalysis(newDataList, people):
+    newDataList = dataFormatter(newDataList)
+    print(len(newDataList))
+    print(len(people))
+    for person in people:
+        person.reset()
+    for newDataPoint in newDataList:
+        indexOfPerson = -1
+        highestScore = -1
+        for idx, person in enumerate(people):
+            if (not person.claimed):
+                currentScore = person.calculateScore(newDataPoint)
+                if (currentScore > 1.5):
+                    if (currentScore > highestScore):
+                        indexOfPerson = idx
+                        highestScore = currentScore
+        if indexOfPerson == -1:
+            print("hjere")
+            people.append(personObj(newDataPoint))
+        else:
+            people[indexOfPerson].addFrame(newDataPoint)
+    for person in people:
+        if not person.claimed:
+            person.addFrame(None)
+        if person.checkPerson():
+            people.remove(person)
+    return people
+
+
+
+
 def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
     (H, W) = imagePar.shape[:2]
     results = []
@@ -132,7 +263,7 @@ def pedestrian_detection(imagePar, modelPar, layerNamePar, personidz=0):
         for i in idzs.flatten():
             (x, y) = (boxes[i][0], boxes[i][1])
             (w, h) = (boxes[i][2], boxes[i][3])
-            res = (confidences[i], (x, y, x + w, y + h, (x + w) / 2, (y + h) / 2), centroids[i])
+            res = (confidences[i], (x, y, x + w, y + h, centroids[i][0], centroids[i][1]))
             results.append(res)
 
     return results
@@ -154,6 +285,7 @@ layer_name = model.getLayerNames()
 layer_name = [layer_name[i[0] - 1] for i in model.getUnconnectedOutLayers()]
 cap = cv2.VideoCapture(0)
 writer = None
+people = []
 
 while True:
     (grabbed, image) = cap.read()
@@ -161,30 +293,22 @@ while True:
     if not grabbed:
         break
     image = imutils.resize(image, width=700)
+    if (imageHeight == 0):
+        imageHeight = image.shape[:2][0]
+        imageWidth = image.shape[:2][1]
     results = pedestrian_detection(image, model, layer_name,
                                    personidz=LABELS.index("person"))
-    list1, previous = result_analysis(results,previous)
+    print(results)
+    people = newAnalysis(results, people)
 
 
 
-    for res in list1:
-        (x, y) = (res[0][0], res[0][1])
-        (w, h) = (res[0][2] - res[0][0], res[0][3] - res[0][1])
-
-        xRatio = .2
-        yRatio = .2
-
-        (cropW, cropH) = (int((xRatio) * w), int((yRatio * h)))
-        (cropX, cropY) = (int(x + ((1 - xRatio) * (w) / 2)), int(y + ((1 - yRatio) * (h) / 2)))
-
-        cropped_image = image[cropY:cropY + cropH, cropX:cropX + cropW]
-
-        cv2.rectangle(image, (cropX, cropY), (cropX + cropW, cropY + cropH), (0, 255, 0), 2)
-
-        dom_c = dominant_color(cropped_image, x, y, w, h)
-        # avg_c = average_color(cropped_image, x, y, w, h)
-        # left_or_right(imagePar, x, y, w, h)
-        cv2.rectangle(image, (res[0][0], res[0][1]), (res[0][2], res[0][3]), (dom_c[2], dom_c[1], dom_c[0]), 2)
+    for person in people:
+        if (person.frameCount > person.MINREL):
+            cv2.rectangle(image, (person.frames[0].x1, person.frames[0].y1), (person.frames[0].x2, person.frames[0].y2), (person.frames[0].domColor.r, person.frames[0].domColor.g, person.frames[0].domColor.b), 3)
+            cv2.rectangle(image, (person.frames[0].x1 + 9, person.frames[0].y1 + 9), (person.frames[0].x2 - 9, person.frames[0].y2 - 9),
+                          (person.frames[0].averageColor.r, person.frames[0].averageColor.g, person.frames[0].averageColor.b), 3)
+            cv2.rectangle(image, (person.frames[0].cropX, person.frames[0].cropY), (person.frames[0].cropX + person.frames[0].cropW, person.frames[0].cropY + person.frames[0].cropH), (0,0,0), 1)
 
     cv2.imshow("Detection", image)
 
