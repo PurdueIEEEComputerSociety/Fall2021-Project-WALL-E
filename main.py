@@ -37,6 +37,7 @@ class personData:
         self.croppedImage = image[self.cropY:self.cropY + self.cropH, self.cropX:self.cropX + self.cropW]
         self.domColor = dominant_color(self.croppedImage)
         self.averageColor = average_color(self.croppedImage)
+        self.position = left_or_right(self.croppedImage, image, self.cropX, self.cropW, self.cropY, self.cropH)
         self.currentPerson = None
 
 class personObj:
@@ -130,9 +131,8 @@ def average_color(cropped_image):
 
 # detects if person is right or left of screen
 # TODO: figure out what to tell hardware if left or right
-def left_or_right(input, x, y, w, h):
-    cropped_image = input[x:(x+w)//2, y:(y+h)//2]
-    (main_height, main_width) = input.shape[:2]
+def left_or_right(cropped_image, image, x, w, y, h):
+    (main_height, main_width) = image.shape[:2]
     (cropped_height, cropped_width) = cropped_image.shape[:2]
 
     rightX = (main_width // 1.7)
