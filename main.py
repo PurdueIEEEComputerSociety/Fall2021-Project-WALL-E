@@ -37,7 +37,6 @@ class personData:
         self.croppedImage = image[self.cropY:self.cropY + self.cropH, self.cropX:self.cropX + self.cropW]
         self.domColor = dominant_color(self.croppedImage)
         self.averageColor = average_color(self.croppedImage)
-        self.position = left_or_right(self.croppedImage, image, self.cropX, self.cropW, self.cropY, self.cropH)
         self.currentPerson = None
 
 class personObj:
@@ -131,22 +130,17 @@ def average_color(cropped_image):
 
 # detects if person is right or left of screen
 # TODO: figure out what to tell hardware if left or right
-def left_or_right(cropped_image, image, x, w, y, h):
-    (main_height, main_width) = image.shape[:2]
-    (cropped_height, cropped_width) = cropped_image.shape[:2]
+def left_or_right(person):
+    if (person == None or person.frames[0] == None):
+        return
 
-    rightX = (main_width // 1.7)
-    leftX = (main_width // 2.5)
+    centerY = imageHeight // 2
+    centerX = imageWidth // 2
 
-    if (cropped_width == 0):
-        print("Cropped image not initialized")
-    # Ensures cropped image isn't too large to skew data
-    elif (4 * cropped_width >= main_width):
-        print("TOO CLOSE")
-    elif ((x+w) < leftX):
-        print("LEFT")
-    elif ((x) > rightX):
-        print("RIGHT")
+    xDiff = centerX - person.frames[0].centerX
+    yDiff = centerY - person.frames[0].centerY
+    print((xDiff, yDiff))
+    return (xDiff, yDiff)
 
 def result_analysis(input, previous):
     final = []
@@ -300,7 +294,8 @@ while True:
                                    personidz=LABELS.index("person"))
     print(results)
     people = newAnalysis(results, people)
-
+    for each in people:
+        left_or_right(each)
 
 
     for person in people:
