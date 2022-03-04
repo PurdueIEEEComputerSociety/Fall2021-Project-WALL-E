@@ -26,6 +26,8 @@ class personData:
         self.y1 = cords[1][1]
         self.x2 = cords[1][2]
         self.y2 = cords[1][3]
+        self.height = abs(self.y2 - self.y1)
+        self.width = abs(self.x2 - self.x1)
         self.centerX = cords[1][4]
         self.centerY = cords[1][5]
         xRatio = .2
@@ -137,10 +139,19 @@ def left_or_right(person):
     centerY = imageHeight // 2
     centerX = imageWidth // 2
 
-    xDiff = centerX - person.frames[0].centerX
-    yDiff = centerY - person.frames[0].centerY
-    print((xDiff, yDiff))
-    return (xDiff, yDiff)
+    xDiff = (centerX - person.frames[0].centerX) / centerX
+    yDiff = (centerY - person.frames[0].centerY) / centerY
+
+    x1 = person.frames[0].x1
+    x2 = person.frames[0].x2
+    y1 = person.frames[0].y1
+    y2 = person.frames[0].y2
+
+    if (y2 == imageHeight):
+        print("TOO TALL TOO CLOSE !!!!!!!!!!!!!!!")
+
+    print("X difference: " + str(xDiff))
+    return (xDiff)
 
 def result_analysis(input, previous):
     final = []
