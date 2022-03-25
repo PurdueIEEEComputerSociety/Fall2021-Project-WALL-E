@@ -6,6 +6,7 @@ from random import randrange
 from sklearn.cluster import KMeans
 from collections import Counter
 
+
 NMS_THRESHOLD = 0.3
 MIN_CONFIDENCE = 0.2
 previous = []
@@ -37,7 +38,7 @@ class personData:
         self.cropX = int(self.x1 + ((1 - xRatio) * (self.x2 - self.x1) / 2))
         self.cropY = int(self.y1 + ((1 - yRatio) * (self.y2 - self.y1) / 2))
         self.croppedImage = image[self.cropY:self.cropY + self.cropH, self.cropX:self.cropX + self.cropW]
-        self.domColor = dominant_color(self.croppedImage)
+        #self.domColor = dominant_color(self.croppedImage)
         self.averageColor = average_color(self.croppedImage)
         self.currentPerson = None
 
@@ -60,14 +61,11 @@ class personObj:
 
     def calculateScore(self, frame):
         currentDistanceScore = distanceScore(self.frames[0].centerX, self.frames[0].centerY, frame.centerX, frame.centerY, imageWidth, imageHeight)
-        domColorSum = 0
         aveColorSum = 0
         for each in self.frames:
-            domColorSum = domColorSum + colorScore(each.domColor, frame.domColor)
             aveColorSum = aveColorSum + colorScore(each.averageColor, frame.averageColor)
-        domColorScore = domColorSum / len(self.frames)
         aveColorScore = aveColorSum / len(self.frames)
-        return 2 * currentDistanceScore + domColorScore + aveColorScore
+        return currentDistanceScore + aveColorScore
 
     def addFrame(self, frame):
         if frame is not None:
@@ -287,7 +285,7 @@ model.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 '''
 
 layer_name = model.getLayerNames()
-layer_name = [layer_name[i[0] - 1] for i in model.getUnconnectedOutLayers()]
+layer_name = [layer_name[i - 1] for i in model.getUnconnectedOutLayers()]
 cap = cv2.VideoCapture(0)
 writer = None
 people = []
@@ -311,9 +309,7 @@ while True:
 
     for person in people:
         if (person.frameCount > person.MINREL):
-            cv2.rectangle(image, (person.frames[0].x1, person.frames[0].y1), (person.frames[0].x2, person.frames[0].y2), (person.frames[0].domColor.r, person.frames[0].domColor.g, person.frames[0].domColor.b), 3)
-            cv2.rectangle(image, (person.frames[0].x1 + 9, person.frames[0].y1 + 9), (person.frames[0].x2 - 9, person.frames[0].y2 - 9),
-                          (person.frames[0].averageColor.r, person.frames[0].averageColor.g, person.frames[0].averageColor.b), 3)
+            cv2.rectangle(image, (person.frames[0].x1, person.frames[0].y1), (person.frames[0].x2, person.frames[0].y2), (person.frames[0].averageColor.r, person.frames[0].averageColor.g, person.frames[0].averageColor.b), 3)
             cv2.rectangle(image, (person.frames[0].cropX, person.frames[0].cropY), (person.frames[0].cropX + person.frames[0].cropW, person.frames[0].cropY + person.frames[0].cropH), (0,0,0), 1)
 
     cv2.imshow("Detection", image)
