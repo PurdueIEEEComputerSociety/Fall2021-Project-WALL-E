@@ -5,6 +5,7 @@ import math
 from random import randrange
 from sklearn.cluster import KMeans
 from collections import Counter
+#from hardware.basic_motor_control import *
 
 
 NMS_THRESHOLD = 0.3
@@ -148,7 +149,7 @@ def left_or_right(person):
     if (y2 == imageHeight):
         print("TOO TALL TOO CLOSE !!!!!!!!!!!!!!!")
 
-    print("X difference: " + str(xDiff))
+
     return (xDiff)
 
 def result_analysis(input, previous):
@@ -285,7 +286,7 @@ model.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 '''
 
 layer_name = model.getLayerNames()
-layer_name = [layer_name[i - 1] for i in model.getUnconnectedOutLayers()]
+layer_name = [layer_name[i[0] - 1] for i in model.getUnconnectedOutLayers()]
 cap = cv2.VideoCapture(0)
 writer = None
 people = []
